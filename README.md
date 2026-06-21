@@ -100,9 +100,10 @@ Then invoke it from your agent (e.g. `discovery-eye` / "find me a tool for …")
 ├── skills/discovery-eye/
 │   ├── SKILL.md              # the skill: 11-phase flow + list/remove/undo modes
 │   ├── references/           # loaded on demand
-│   │   ├── sources.md        #   the 3 search tiers + candidate normalization
+│   │   ├── sources.md        #   the 3 search tiers (+ skills.sh, social) + normalization
+│   │   ├── scoring.md        #   0–100 merit-ranking rubric + reputation boosts
 │   │   ├── host-profiles.md  #   per-agent install paths + provenance rules
-│   │   └── vetting.md        #   evidence fields + risk flags + badges
+│   │   └── vetting.md        #   safety: evidence fields + risk flags + badges
 │   └── scripts/              # plain Node helpers the skill calls
 │       ├── search-catalog.mjs  # Tier-1 local catalog search
 │       ├── ledger.mjs          # provenance record (powers list + undo)

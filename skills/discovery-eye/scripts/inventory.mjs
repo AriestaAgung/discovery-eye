@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// `scout list` — full host inventory (skills, MCP, plugins) with items
-// installed by scout/discovery-eye flagged from the ledger.
+// `discovery-eye list` — full host inventory (skills, MCP, plugins) with items
+// installed by discovery-eye flagged from the ledger.
 //
 // Usage: inventory.mjs [projectDir]
 //   projectDir (optional) = cwd to scan for project-scope .mcp.json / .claude/skills

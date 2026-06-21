@@ -27,7 +27,7 @@ in the known marketplaces with its components and popularity.
 Use the helper instead of reading the 300KB+ file:
 
 ```
-node ~/.claude/skills/scout/scripts/search-catalog.mjs "<need keywords>"
+node "$SKILL_DIR/scripts/search-catalog.mjs" "<need keywords>"
 ```
 
 It returns ranked matches with: plugin id, type breakdown
@@ -44,6 +44,10 @@ Marketplace registry of where those plugins come from:
 
 - **anthropics official** — `anthropics/claude-plugins-official` (already a
   marketplace; in the local catalog).
+- **skills.sh** — cross-agent skill registry with install counts. CLI
+  `npx skills find "<query>"` (ranked, non-interactive) is the stable path;
+  webfetch `https://skills.sh/` for the leaderboard. Parse `owner/repo@skill`
+  + install count (feeds the popularity signal in `scoring.md`).
 - **MCP registry** — `https://registry.modelcontextprotocol.io` (official
   server list; query by keyword). Fetch the server's repo + run command.
 - **awesome-mcp-servers** — `github.com/modelcontextprotocol/servers` and the
@@ -63,8 +67,13 @@ Tier-3.
   `.mcp.json`, marketplace manifests.
 - **WebFetch** — read candidate README / repo to fill the candidate record
   and the vetting evidence.
-- **Social** — mentions on dev社区 (blogs, X/Twitter, Reddit r/* threads) only
-  as a *pointer* to a repo; the repo, not the post, is the candidate.
+- **Social (discovery)** — mentions on blogs, X/Twitter, Reddit r/* threads
+  only as a *pointer* to a repo; the repo, not the post, is the candidate.
+
+**Social validation (not discovery).** Once you have a candidate, a quick
+`"<name>" site:reddit.com OR site:news.ycombinator.com` search gauges
+community sentiment — this feeds the *social-validation* signal in
+`scoring.md` (low weight). Never promote a candidate on buzz alone.
 
 Tier-3 candidates ALWAYS go through `vetting.md` and ALWAYS require explicit
 per-item approval. Never auto-install a Tier-3 find.
@@ -73,8 +82,7 @@ per-item approval. Never auto-install a Tier-3 find.
 
 ## Dedupe & rank
 
-1. Collapse by canonical identity (repo URL, or marketplace plugin id, or MCP
-   server name). Keep the highest-trust source for the merged candidate.
-2. Rank within a need: `trustTier` first, then `popularity`, then `recency`,
-   then `relevance`.
-3. Cap suggestions to the top ~3 per need unless the user asks for more.
+Collapse by canonical identity (repo URL, marketplace plugin id, or MCP server
+name), keeping the highest-trust source per merged candidate, then score and
+rank with the 0–100 rubric in `references/scoring.md`. Cap to the top ~3 per
+need unless the user asks for more.

@@ -106,6 +106,9 @@ Every result is normalized to the **candidate record**:
 ```
 `type` ∈ `plugin | skill | mcp | connector | memory`. `install` carries the
 type-specific payload (marketplace+plugin id, repo+path, MCP command+args+env, …).
+**Memory backends** (mem0, openmemory, the MCP memory server) are not their own
+type — they are MCP servers; tag them `mcp` and route through the mcp path. The
+`memory` type is reserved for **durable notes** written to the host memory file.
 
 ## Phase 6 — Vet & rank
 
@@ -113,10 +116,9 @@ For each candidate gather evidence and flag risk per `references/vetting.md`:
 source repo, popularity (stars / `unique_installs`), last-updated, **what code
 it runs** (hooks, MCP `command`, post-install scripts), secret/auth needs, and
 **context cost** (`always_on` / `on_invoke` tokens from the local catalog — an
-always-on skill taxes every prompt). Drop candidates already in the
-inventory set (Phase 3). Dedupe across tiers (same repo/name = one candidate,
-keep highest-trust source). Rank by relevance × popularity × recency, trusted
-tiers first.
+always-on skill taxes every prompt). Drop candidates already in the inventory
+set (Phase 3), then **dedupe and rank with the 0–100 rubric in
+`references/scoring.md`** (merit ranking — distinct from the safety badge).
 
 When one plugin covers several confirmed needs, list it once and note all the
 needs it answers — don't repeat it per need.
@@ -149,7 +151,9 @@ type live in `references/host-profiles.md`. Summary:
   TOML). Prompt for required env var *names*; never store secret *values* —
   reference env or leave a placeholder.
 - **connector** → remote-MCP/OAuth entry; hand off interactive auth to the user.
-- **memory** → append/create the memory file at chosen scope.
+- **memory** → *backend* (mem0/openmemory/MCP memory server) installs via the
+  **mcp** path above (tag `mcp:memory` in the ledger); a *durable note* is
+  appended to the host memory file (`CLAUDE.md`/`AGENTS.md`/`GEMINI.md`) at scope.
 
 **Always back up** the target config to `<file>.bak` before writing (enables
 Undo). **Name collision:** if an MCP server name already exists, do not

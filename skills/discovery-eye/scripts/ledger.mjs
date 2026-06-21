@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Provenance ledger for scout/discovery-eye installs.
-// Single source of truth: records every install so `scout list` can flag them
-// and `scout undo` knows exact targets + backups.
+// Provenance ledger for discovery-eye installs.
+// Single source of truth: records every install so `discovery-eye list` can
+// flag them and `discovery-eye undo` knows exact targets + backups.
 //
 // Usage:
 //   ledger.mjs add '<json entry>'     append an install record

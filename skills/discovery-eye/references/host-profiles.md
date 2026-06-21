@@ -58,15 +58,17 @@ host's format, **merging** into existing config (never clobber):
   user (e.g. an `authenticate` step). Do not attempt to capture tokens.
 
 ### memory
-- Append a clearly-delimited block to the host memory file at chosen scope,
-  or create the file if absent. Keep one fact per block; don't duplicate
-  existing content.
+- This path is for **durable notes** only: append a clearly-delimited block to
+  the host memory file at chosen scope, or create the file if absent. One fact
+  per block; don't duplicate existing content.
+- A **memory backend** (mem0, openmemory, the MCP memory server) is *not* a
+  file — install it via the **mcp** path above and tag it `mcp:memory`.
 
 ## Provenance (every install)
 
 Record each install in the ledger
-(`~/.claude/skills/scout/scripts/ledger.mjs add '<entry>'`) — canonical source
-of truth for `scout list` and `scout undo`. Add an inline `installed_by:
+(`node "$SKILL_DIR/scripts/ledger.mjs" add '<entry>'`) — canonical source
+of truth for `discovery-eye list` and `discovery-eye undo`. Add an inline `installed_by:
 discovery-eye` tag only where the format tolerates it: **skill** frontmatter
 and **memory** blocks (`<!-- installed_by: discovery-eye -->`). MCP/connector
 configs (JSON/TOML) and plugins are **ledger-only** — never add unknown keys

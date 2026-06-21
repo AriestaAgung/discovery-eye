@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// `scout remove` — uninstall an item from the inventory. Recoverable:
+// `discovery-eye remove` — uninstall an item from the inventory. Recoverable:
 // skills are moved to a quarantine dir, config edits back up to <file>.bak.
 // Plugins are NOT handled here (use the host's plugin uninstall) — the agent
 // dispatches those per references/host-profiles.md.
