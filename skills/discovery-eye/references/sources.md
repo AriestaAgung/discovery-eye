@@ -69,6 +69,17 @@ Tier-3.
   and the vetting evidence.
 - **Social (discovery)** — mentions on blogs, X/Twitter, Reddit r/* threads
   only as a *pointer* to a repo; the repo, not the post, is the candidate.
+- **Social platforms (YouTube, Instagram, Threads, LinkedIn)** — niche MCP
+  discussion that the default WebSearch rarely surfaces. Use the helper:
+  `node "$SKILL_DIR/scripts/search-social.mjs plan <platform> "<need>"` emits
+  per-platform search recipes (brave-search queries + a YouTube results-page
+  webfetch fallback); run them with the agent's own
+  `brave-search_brave_web_search` / `webfetch`, then pipe the raw fetched JSON
+  to `node "$SKILL_DIR/scripts/search-social.mjs normalize <platform> "<need>"`
+  to harvest repo-pointer candidates. Full per-platform strategy, reachability,
+  and ToS limits are in `references/social-platforms.md`. Instagram and
+  LinkedIn almost always return a login wall unauthenticated — empty
+  `normalize` output is a graceful skip, not a failure.
 
 **Social validation (not discovery).** Once you have a candidate, a quick
 `"<name>" site:reddit.com OR site:news.ycombinator.com` search gauges
