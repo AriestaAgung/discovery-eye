@@ -121,3 +121,40 @@ export function normalizeResults(platform, rawJson, need) {
   for (const url of extractRepoUrls(blob)) addCandidate(url, desc);
   return out;
 }
+
+if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
+  const [mode, platform, need] = process.argv.slice(2);
+
+  if (mode === "plan") {
+    if (!platform || !need) {
+      console.error('usage: search-social.mjs plan <platform> "<need>"');
+      process.exit(2);
+    }
+    console.log(JSON.stringify(buildQueries(platform, need), null, 2));
+  } else if (mode === "normalize") {
+    if (!platform) {
+      console.error('usage: search-social.mjs normalize <platform> ["<need>"]');
+      process.exit(2);
+    }
+    let input = "";
+    process.stdin.setEncoding("utf8");
+    process.stdin.on("data", (c) => (input += c));
+    process.stdin.on("end", () => {
+      let rawJson = null;
+      if (input.trim()) {
+        try {
+          rawJson = JSON.parse(input);
+        } catch (e) {
+          console.error(`invalid JSON on stdin: ${e.message}`);
+          process.exit(1);
+        }
+      }
+      console.log(JSON.stringify(normalizeResults(platform, rawJson, need || ""), null, 2));
+    });
+  } else {
+    console.error(
+      'usage: search-social.mjs plan <platform> "<need>" | normalize <platform> ["<need>"]'
+    );
+    process.exit(2);
+  }
+}

@@ -184,3 +184,65 @@ test("normalizeResults generic fallback dedupes across stringified blob", () => 
   assert.equal(out[0].sourceUrl, "https://github.com/dup/x");
   assert.equal(out[1].sourceUrl, "https://github.com/uniq/y");
 });
+
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "search-social.mjs");
+const NODE = process.execPath;
+
+function run(args, stdin = "") {
+  try {
+    const stdout = execFileSync(NODE, [SCRIPT, ...args], {
+      input: stdin,
+      encoding: "utf8",
+    });
+    return { code: 0, stdout };
+  } catch (e) {
+    return { code: e.status ?? 1, stdout: e.stdout ?? "", stderr: e.stderr ?? "" };
+  }
+}
+
+test("CLI plan mode prints buildQueries JSON for youtube", () => {
+  const { code, stdout } = run(["plan", "youtube", "postgres mcp"]);
+  assert.equal(code, 0);
+  const parsed = JSON.parse(stdout);
+  assert.ok(Array.isArray(parsed));
+  assert.ok(parsed.some((r) => r.tool === "brave-search" && /site:youtube\.com/.test(r.query)));
+});
+
+test("CLI normalize mode reads stdin and emits candidates", () => {
+  const payload = JSON.stringify({
+    items: [{ id: { videoId: "v9" }, snippet: { title: "t", description: "github.com/zz/yy" } }],
+  });
+  const { code, stdout } = run(["normalize", "youtube", "need"], payload);
+  assert.equal(code, 0);
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].sourceUrl, "https://github.com/zz/yy");
+});
+
+test("CLI normalize mode with empty stdin returns []", () => {
+  const { code, stdout } = run(["normalize", "instagram"], "");
+  assert.equal(code, 0);
+  assert.deepEqual(JSON.parse(stdout), []);
+});
+
+test("CLI normalize mode exits 1 on invalid JSON", () => {
+  const { code, stderr } = run(["normalize", "youtube"], "not json{");
+  assert.equal(code, 1);
+  assert.match(stderr, /invalid JSON/i);
+});
+
+test("CLI exits 2 with usage message when no mode given", () => {
+  const { code, stderr } = run([]);
+  assert.equal(code, 2);
+  assert.match(stderr, /usage/i);
+});
+
+test("CLI plan exits 2 when platform missing", () => {
+  const { code, stderr } = run(["plan"]);
+  assert.equal(code, 2);
+  assert.match(stderr, /usage/i);
+});
