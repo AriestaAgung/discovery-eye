@@ -66,3 +66,33 @@ export function normalizeGithubRepos(rawJson, need) {
   }
   return out;
 }
+
+export function normalizeGithubCode(rawJson, need) {
+  const needText = (need || "").trim();
+  const out = [];
+  if (!rawJson || !Array.isArray(rawJson.items)) return out;
+  const seen = new Set();
+  for (const c of rawJson.items) {
+    const repo = c.repository;
+    if (!repo) continue;
+    const url = repo.html_url;
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    const name = (repo.full_name || "").split("/")[1] || url;
+    const path = c.path || "";
+    out.push({
+      type: "mcp",
+      name,
+      source: "github",
+      sourceUrl: url,
+      description: (path ? `code match: ${path}` : "").slice(0, 200),
+      need: needText,
+      install: { repo: url, path },
+      stars: repo.stargazers_count || 0,
+      updatedAt: "",
+      topics: [],
+      discoveredVia: "github:code",
+    });
+  }
+  return out;
+}

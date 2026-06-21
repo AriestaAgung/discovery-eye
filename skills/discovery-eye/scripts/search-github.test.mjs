@@ -100,3 +100,55 @@ test("normalizeGithubRepos returns [] for null or no items", () => {
   assert.deepEqual(normalizeGithubRepos({}, "x"), []);
   assert.deepEqual(normalizeGithubRepos({ items: [] }, "x"), []);
 });
+
+import { normalizeGithubCode } from "./search-github.mjs";
+
+test("normalizeGithubCode maps a code match to a candidate carrying the file path", () => {
+  const raw = {
+    items: [
+      {
+        repository: { full_name: "foo/bar", html_url: "https://github.com/foo/bar", stargazers_count: 7 },
+        path: "README.md",
+        name: "README.md",
+      },
+    ],
+  };
+  const out = normalizeGithubCode(raw, "slack");
+  assert.equal(out.length, 1);
+  const c = out[0];
+  assert.equal(c.type, "mcp");
+  assert.equal(c.name, "bar");
+  assert.equal(c.sourceUrl, "https://github.com/foo/bar");
+  assert.equal(c.discoveredVia, "github:code");
+  assert.equal(c.install.path, "README.md");
+  assert.equal(c.stars, 7);
+  assert.match(c.description, /README\.md/);
+});
+
+test("normalizeGithubCode dedupes multiple matches in the same repo", () => {
+  const raw = {
+    items: [
+      { repository: { full_name: "a/b", html_url: "https://github.com/a/b" }, path: "README.md" },
+      { repository: { full_name: "a/b", html_url: "https://github.com/a/b" }, path: "docs/mcp.md" },
+      { repository: { full_name: "c/d", html_url: "https://github.com/c/d" }, path: ".mcp.json" },
+    ],
+  };
+  const out = normalizeGithubCode(raw, "");
+  assert.equal(out.length, 2);
+  assert.equal(out[0].sourceUrl, "https://github.com/a/b");
+  assert.equal(out[0].install.path, "README.md");
+  assert.equal(out[1].sourceUrl, "https://github.com/c/d");
+});
+
+test("normalizeGithubCode skips items without a repository object", () => {
+  const raw = { items: [{ path: "x.md" }, { repository: { full_name: "g/h", html_url: "https://github.com/g/h" }, path: "y.md" }] };
+  const out = normalizeGithubCode(raw, "");
+  assert.equal(out.length, 1);
+  assert.equal(out[0].sourceUrl, "https://github.com/g/h");
+});
+
+test("normalizeGithubCode returns [] for null or no items", () => {
+  assert.deepEqual(normalizeGithubCode(null, "x"), []);
+  assert.deepEqual(normalizeGithubCode({}, "x"), []);
+  assert.deepEqual(normalizeGithubCode({ items: [] }, "x"), []);
+});
