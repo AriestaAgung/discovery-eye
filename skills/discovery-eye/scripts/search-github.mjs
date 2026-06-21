@@ -12,6 +12,10 @@
 //     -> reads raw GitHub search API JSON from stdin, prints normalized
 //        candidate records (see references/sources.md candidate shape).
 
+import { fileURLToPath } from "node:url";
+
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+
 export function buildGithubQueries(need) {
   const q = (need || "").trim();
   return [
@@ -95,4 +99,42 @@ export function normalizeGithubCode(rawJson, need) {
     });
   }
   return out;
+}
+
+if (isMainModule) {
+  const [mode, target, need] = process.argv.slice(2);
+
+  if (mode === "plan") {
+    if (!target) {
+      console.error('usage: search-github.mjs plan "<need>"');
+      process.exit(2);
+    }
+    console.log(JSON.stringify(buildGithubQueries(target), null, 2));
+  } else if (mode === "normalize") {
+    if (target !== "repos" && target !== "code") {
+      console.error('usage: search-github.mjs normalize <repos|code> ["<need>"]');
+      process.exit(2);
+    }
+    let input = "";
+    process.stdin.setEncoding("utf8");
+    process.stdin.on("data", (c) => (input += c));
+    process.stdin.on("end", () => {
+      let rawJson = null;
+      if (input.trim()) {
+        try {
+          rawJson = JSON.parse(input);
+        } catch (e) {
+          console.error(`invalid JSON on stdin: ${e.message}`);
+          process.exit(1);
+        }
+      }
+      const out = target === "repos"
+        ? normalizeGithubRepos(rawJson, need || "")
+        : normalizeGithubCode(rawJson, need || "");
+      console.log(JSON.stringify(out, null, 2));
+    });
+  } else {
+    console.error('usage: search-github.mjs plan "<need>" | normalize <repos|code> ["<need>"]');
+    process.exit(2);
+  }
 }

@@ -152,3 +152,76 @@ test("normalizeGithubCode returns [] for null or no items", () => {
   assert.deepEqual(normalizeGithubCode({}, "x"), []);
   assert.deepEqual(normalizeGithubCode({ items: [] }, "x"), []);
 });
+
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "search-github.mjs");
+const NODE = process.execPath;
+
+function run(args, stdin = "") {
+  try {
+    const stdout = execFileSync(NODE, [SCRIPT, ...args], { input: stdin, encoding: "utf8" });
+    return { code: 0, stdout };
+  } catch (e) {
+    return { code: e.status ?? 1, stdout: e.stdout ?? "", stderr: e.stderr ?? "" };
+  }
+}
+
+test("CLI plan mode prints buildGithubQueries JSON", () => {
+  const { code, stdout } = run(["plan", "postgres mcp"]);
+  assert.equal(code, 0);
+  const parsed = JSON.parse(stdout);
+  assert.ok(Array.isArray(parsed));
+  assert.ok(parsed.some((r) => r.tool === "github_search_repositories"));
+  assert.ok(parsed.some((r) => r.tool === "github_search_code"));
+});
+
+test("CLI normalize repos reads stdin and emits candidates", () => {
+  const payload = JSON.stringify({
+    items: [{ full_name: "foo/bar", html_url: "https://github.com/foo/bar", stargazers_count: 3 }],
+  });
+  const { code, stdout } = run(["normalize", "repos", "need"], payload);
+  assert.equal(code, 0);
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].sourceUrl, "https://github.com/foo/bar");
+  assert.equal(parsed[0].discoveredVia, "github:repos");
+});
+
+test("CLI normalize code reads stdin and emits candidates", () => {
+  const payload = JSON.stringify({
+    items: [{ repository: { full_name: "a/b", html_url: "https://github.com/a/b" }, path: "README.md" }],
+  });
+  const { code, stdout } = run(["normalize", "code", "need"], payload);
+  assert.equal(code, 0);
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].discoveredVia, "github:code");
+  assert.equal(parsed[0].install.path, "README.md");
+});
+
+test("CLI normalize with empty stdin returns []", () => {
+  const { code, stdout } = run(["normalize", "repos"], "");
+  assert.equal(code, 0);
+  assert.deepEqual(JSON.parse(stdout), []);
+});
+
+test("CLI normalize exits 1 on invalid JSON", () => {
+  const { code, stderr } = run(["normalize", "repos"], "not json{");
+  assert.equal(code, 1);
+  assert.match(stderr, /invalid JSON/i);
+});
+
+test("CLI normalize exits 2 on unknown target", () => {
+  const { code, stderr } = run(["normalize", "issues", "x"], "{}");
+  assert.equal(code, 2);
+  assert.match(stderr, /usage/i);
+});
+
+test("CLI exits 2 with usage message when no mode given", () => {
+  const { code, stderr } = run([]);
+  assert.equal(code, 2);
+  assert.match(stderr, /usage/i);
+});
