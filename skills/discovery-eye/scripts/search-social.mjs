@@ -108,6 +108,16 @@ export function normalizeResults(platform, rawJson, need) {
     return out;
   }
 
-  // Fallback for other platforms / shapes is implemented in Task 5.
+  // Generic fallback: Instagram / Threads / LinkedIn, or any payload without an
+  // `items` array. The agent wraps fetched markdown as { text | description |
+  // title } when it isn't already JSON; stringify everything so nested fields
+  // are scanned too. Login-wall payloads simply yield no repo URLs -> [].
+  const blob = JSON.stringify(rawJson);
+  const desc =
+    rawJson && typeof rawJson === "object" &&
+    (rawJson.text || rawJson.description || rawJson.title)
+      ? String(rawJson.text || rawJson.description || rawJson.title)
+      : "";
+  for (const url of extractRepoUrls(blob)) addCandidate(url, desc);
   return out;
 }

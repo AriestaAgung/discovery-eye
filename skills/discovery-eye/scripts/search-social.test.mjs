@@ -149,3 +149,38 @@ test("normalizeResults youtube returns [] when items have no repo links", () => 
   };
   assert.deepEqual(normalizeResults("youtube", raw, "x"), []);
 });
+
+test("normalizeResults instagram harvests repo from {text} webfetch wrapper", () => {
+  const raw = { text: "cool post! repo: github.com/aa/bb #mcp" };
+  const out = normalizeResults("instagram", raw, "image ocr");
+  assert.equal(out.length, 1);
+  assert.equal(out[0].sourceUrl, "https://github.com/aa/bb");
+  assert.equal(out[0].platform, "instagram");
+  assert.equal(out[0].need, "image ocr");
+});
+
+test("normalizeResults linkedin returns [] on login-wall payload (no repo)", () => {
+  const raw = { text: "Sign in to see more LinkedIn content", url: "https://linkedin.com/posts/xyz" };
+  assert.deepEqual(normalizeResults("linkedin", raw, "resume"), []);
+});
+
+test("normalizeResults threads harvests from nested description field", () => {
+  const raw = { post: { description: "thread about github.com/cc/dd mcp" } };
+  const out = normalizeResults("threads", raw, "slack");
+  assert.equal(out.length, 1);
+  assert.equal(out[0].sourceUrl, "https://github.com/cc/dd");
+});
+
+test("normalizeResults returns [] for null/undefined rawJson on any platform", () => {
+  assert.deepEqual(normalizeResults("youtube", null, "x"), []);
+  assert.deepEqual(normalizeResults("instagram", undefined, "x"), []);
+  assert.deepEqual(normalizeResults("linkedin", null, "x"), []);
+});
+
+test("normalizeResults generic fallback dedupes across stringified blob", () => {
+  const raw = { a: "github.com/dup/x", b: { c: "github.com/dup/x and github.com/uniq/y" } };
+  const out = normalizeResults("threads", raw, "");
+  assert.equal(out.length, 2);
+  assert.equal(out[0].sourceUrl, "https://github.com/dup/x");
+  assert.equal(out[1].sourceUrl, "https://github.com/uniq/y");
+});
