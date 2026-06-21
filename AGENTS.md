@@ -23,7 +23,7 @@ runtime; `.mjs` files are plain helper programs (no MCP server, no daemon).
 Run the unit tests (no network, no setup):
 
 ```bash
-node --test skills/discovery-eye/scripts/search-social.test.mjs
+node --test skills/discovery-eye/scripts/search-social.test.mjs skills/discovery-eye/scripts/search-github.test.mjs
 ```
 
 To run every `.test.mjs` in the repo as the set grows:

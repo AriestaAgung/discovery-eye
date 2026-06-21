@@ -102,12 +102,14 @@ Then invoke it from your agent (e.g. `discovery-eye` / "find me a tool for …")
 │   ├── references/           # loaded on demand
 │   │   ├── sources.md        #   the 3 search tiers (+ skills.sh, social) + normalization
 │   │   ├── social-platforms.md #  YouTube/Instagram/Threads/LinkedIn search strategy & ToS
+│   │   ├── github-discovery.md #  GitHub search strategy + response-shape notes
 │   │   ├── scoring.md        #   0–100 merit-ranking rubric + reputation boosts
 │   │   ├── host-profiles.md  #   per-agent install paths + provenance rules
 │   │   └── vetting.md        #   safety: evidence fields + risk flags + badges
 │   └── scripts/              # plain Node helpers the skill calls
 │       ├── search-catalog.mjs  # Tier-1 local catalog search
 │       ├── search-social.mjs   # Tier-3 social-platform search + normalize
+│       ├── search-github.mjs   # Tier-3 GitHub (repos + code search) + normalize
 │       ├── ledger.mjs          # provenance record (powers list + undo)
 │       ├── inventory.mjs       # `discovery-eye list`
 │       └── remove.mjs          # uninstall / quarantine / restore

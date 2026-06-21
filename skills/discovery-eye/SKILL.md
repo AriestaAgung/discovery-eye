@@ -103,6 +103,12 @@ per need for large sets). Three tiers, detailed in `references/sources.md`:
    to get recipes, then `normalize <platform>` on the fetched JSON. See
    `references/social-platforms.md` for per-platform strategy & ToS limits.
 
+   For structured GitHub discovery, prefer the dedicated helper:
+   `node "$SKILL_DIR/scripts/search-github.mjs plan "<need>"` emits
+   `github_search_repositories` / `github_search_code` recipes; run them and
+   pipe responses to `normalize repos` / `normalize code`. See
+   `references/github-discovery.md`.
+
 Every result is normalized to the **candidate record**:
 
 ```

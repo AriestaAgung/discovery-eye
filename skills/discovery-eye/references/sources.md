@@ -62,9 +62,15 @@ Tier-3.
 ## Tier 3 — Open web (powerful, must be vetted)
 
 - **WebSearch** — `"<need>" claude skill OR mcp server OR plugin` etc.
-- **GitHub search** — `https://github.com/search?q=<need>+mcp&type=repositories`,
-  sort by stars/recently-updated. Look for `SKILL.md`, `mcp` server repos,
-  `.mcp.json`, marketplace manifests.
+- **GitHub search** — structured, via the helper. Run
+  `node "$SKILL_DIR/scripts/search-github.mjs plan "<need>"` to emit
+  `github_search_repositories` / `github_search_code` recipes, call those tools,
+  then pipe the raw responses through `normalize repos` / `normalize code`.
+  Candidates carry `stars` + `updatedAt` (feeds `scoring.md` Popularity +
+  Recency directly). Full strategy + response-shape notes in
+  `references/github-discovery.md`. (Falls back to the manual
+  `https://github.com/search?q=<need>+mcp` URL + WebFetch only if the
+  `github_search_*` tools are unavailable on the host.)
 - **WebFetch** — read candidate README / repo to fill the candidate record
   and the vetting evidence.
 - **Social (discovery)** — mentions on blogs, X/Twitter, Reddit r/* threads
