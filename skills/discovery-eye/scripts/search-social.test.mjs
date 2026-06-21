@@ -25,3 +25,33 @@ test("buildQueries instagram uses site:instagram.com", () => {
   const brave = recipes.find((r) => r.tool === "brave-search");
   assert.match(brave.query, /site:instagram\.com/);
 });
+
+import { SUPPORTED_PLATFORMS } from "./search-social.mjs";
+
+test("buildQueries threads uses site:threads.net", () => {
+  const recipes = buildQueries("threads", "slack bot");
+  const brave = recipes.find((r) => r.tool === "brave-search");
+  assert.match(brave.query, /site:threads\.net/);
+});
+
+test("buildQueries linkedin uses site:linkedin.com", () => {
+  const recipes = buildQueries("linkedin", "resume parser");
+  const brave = recipes.find((r) => r.tool === "brave-search");
+  assert.match(brave.query, /site:linkedin\.com/);
+});
+
+test("buildQueries throws for unsupported platform", () => {
+  assert.throws(
+    () => buildQueries("tiktok", "anything"),
+    /unsupported platform: tiktok/
+  );
+});
+
+test("SUPPORTED_PLATFORMS lists exactly the four target platforms", () => {
+  assert.deepEqual([...SUPPORTED_PLATFORMS].sort(), [
+    "instagram",
+    "linkedin",
+    "threads",
+    "youtube",
+  ]);
+});
