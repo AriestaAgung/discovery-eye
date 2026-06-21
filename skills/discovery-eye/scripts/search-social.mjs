@@ -14,6 +14,10 @@
 //
 // Platforms: youtube, instagram, threads, linkedin.
 
+import { fileURLToPath } from "node:url";
+
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+
 export const SUPPORTED_PLATFORMS = ["youtube", "instagram", "threads", "linkedin"];
 
 export const SITE_FOR = {
@@ -122,7 +126,7 @@ export function normalizeResults(platform, rawJson, need) {
   return out;
 }
 
-if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
+if (isMainModule) {
   const [mode, platform, need] = process.argv.slice(2);
 
   if (mode === "plan") {
