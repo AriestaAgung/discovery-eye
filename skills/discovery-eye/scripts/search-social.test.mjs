@@ -55,3 +55,35 @@ test("SUPPORTED_PLATFORMS lists exactly the four target platforms", () => {
     "youtube",
   ]);
 });
+
+import { extractRepoUrls } from "./search-social.mjs";
+
+test("extractRepoUrls finds bare github.com owner/repo links", () => {
+  const urls = extractRepoUrls("see github.com/foo/bar for the mcp server");
+  assert.deepEqual(urls, ["https://github.com/foo/bar"]);
+});
+
+test("extractRepoUrls finds https-prefixed links and strips trailing dot", () => {
+  const urls = extractRepoUrls(
+    "check https://github.com/baz/qux. and github.com/a/b."
+  );
+  assert.deepEqual(urls, ["https://github.com/baz/qux", "https://github.com/a/b"]);
+});
+
+test("extractRepoUrls dedupes repeated repos preserving first-seen order", () => {
+  const urls = extractRepoUrls(
+    "github.com/x/y mentioned twice: github.com/x/y and github.com/z/w"
+  );
+  assert.deepEqual(urls, ["https://github.com/x/y", "https://github.com/z/w"]);
+});
+
+test("extractRepoUrls ignores github.com path-less or non-repo fragments", () => {
+  const urls = extractRepoUrls("visit github.com or github.com/foo only");
+  assert.deepEqual(urls, []);
+});
+
+test("extractRepoUrls returns [] for empty / null input", () => {
+  assert.deepEqual(extractRepoUrls(""), []);
+  assert.deepEqual(extractRepoUrls(null), []);
+  assert.deepEqual(extractRepoUrls(undefined), []);
+});

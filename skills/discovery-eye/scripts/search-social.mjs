@@ -52,3 +52,22 @@ export function buildQueries(platform, need) {
   }
   return recipes;
 }
+
+// Matches github.com/<owner>/<repo>, with or without https://, tolerating a
+// trailing period (end of sentence). Owner: 1-39 alnum/dash. Repo: alnum/._-.
+const REPO_RE =
+  /(?:https?:\/\/)?github\.com\/([A-Za-z0-9][A-Za-z0-9-]{0,38})\/([A-Za-z0-9._-]{1,100})/g;
+
+export function extractRepoUrls(text) {
+  if (!text) return [];
+  const out = new Set();
+  let m;
+  REPO_RE.lastIndex = 0;
+  while ((m = REPO_RE.exec(text)) !== null) {
+    let repo = m[2];
+    if (repo.endsWith(".")) repo = repo.slice(0, -1);
+    if (!repo) continue;
+    out.add(`https://github.com/${m[1]}/${repo}`);
+  }
+  return [...out];
+}
