@@ -27,7 +27,10 @@ Raise a flag for any of:
 - ⚠️ **Wants secrets** — requests API keys/tokens, especially broad-scope.
 - ⚠️ **Network egress** — sends data to a third-party host not core to its purpose.
 - ⚠️ **Typosquat** — name mimics a popular project but different repo/author.
-- ⚠️ **No source** — only a social post, no inspectable repo.
+- ⚠️ **No source** — only a social post, no inspectable repo. Social-platform
+  candidates (YouTube/Instagram/Threads/LinkedIn) found via `search-social.mjs`
+  MUST resolve to a GitHub `sourceUrl`; a hit that yields no repo URL is
+  dropped at `normalize`, never suggested.
 - ⚠️ **Heavy always-on** — large `always_on` token cost; bloats every prompt.
 
 ## Risk badge (shown in suggestions)
