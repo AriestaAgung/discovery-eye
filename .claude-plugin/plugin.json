@@ -1,0 +1,10 @@
+{
+  "name": "discovery-eye",
+  "description": "Find and install everything a coding agent needs — MCP servers, skills, plugins, connectors, memory — from the local catalog, official registries, and the open web. Infers unmet needs from your conversation and memory, vets each candidate for safety, and installs with per-item approval. Cross-agent.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ariesta Agung"
+  },
+  "homepage": "https://github.com/ariesta-app/discovery-eye",
+  "keywords": ["mcp", "skills", "plugins", "discovery", "install", "cross-agent"]
+}

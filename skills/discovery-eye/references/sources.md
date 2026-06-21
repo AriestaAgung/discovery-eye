@@ -1,0 +1,80 @@
+# Search sources
+
+Three tiers, searched in parallel. Always prefer a hit from a higher tier
+(1 > 2 > 3) when the same capability appears in multiple tiers.
+
+Every hit, from any source, must be normalized to the **candidate record**:
+
+```jsonc
+{
+  "type": "plugin | skill | mcp | connector | memory",
+  "name": "human name",
+  "source": "local | registry:<name> | github | web:<host>",
+  "sourceUrl": "https://…",
+  "description": "one line, what it does",
+  "need": "the confirmed need this answers",
+  "install": { /* type-specific, see host-profiles.md */ }
+}
+```
+
+---
+
+## Tier 1 — Local catalog (fast, zero-risk)
+
+`~/.claude/plugins/plugin-catalog-cache.json` — already indexes every plugin
+in the known marketplaces with its components and popularity.
+
+Use the helper instead of reading the 300KB+ file:
+
+```
+node ~/.claude/skills/scout/scripts/search-catalog.mjs "<need keywords>"
+```
+
+It returns ranked matches with: plugin id, type breakdown
+(skills/agents/mcpServers/hooks), `unique_installs`, and the marketplace
+description. Map each component to a candidate:
+- a plugin with `mcpServers` → also surface as an `mcp` option
+- a plugin with `skills` → the skill names are usable individually if the
+  source repo ships them standalone
+
+Marketplace registry of where those plugins come from:
+`~/.claude/plugins/known_marketplaces.json`.
+
+## Tier 2 — Registries (curated, low-risk)
+
+- **anthropics official** — `anthropics/claude-plugins-official` (already a
+  marketplace; in the local catalog).
+- **MCP registry** — `https://registry.modelcontextprotocol.io` (official
+  server list; query by keyword). Fetch the server's repo + run command.
+- **awesome-mcp-servers** — `github.com/modelcontextprotocol/servers` and the
+  community `awesome-mcp-servers` list. Good for `mcp` candidates.
+- **superpowers** — `obra/superpowers-marketplace` (skills/plugins).
+- Any other entry in `known_marketplaces.json`.
+
+For a marketplace not yet in `known_marketplaces.json`, treat it as Tier-2
+only after confirming it is a real, maintained marketplace; otherwise it is
+Tier-3.
+
+## Tier 3 — Open web (powerful, must be vetted)
+
+- **WebSearch** — `"<need>" claude skill OR mcp server OR plugin` etc.
+- **GitHub search** — `https://github.com/search?q=<need>+mcp&type=repositories`,
+  sort by stars/recently-updated. Look for `SKILL.md`, `mcp` server repos,
+  `.mcp.json`, marketplace manifests.
+- **WebFetch** — read candidate README / repo to fill the candidate record
+  and the vetting evidence.
+- **Social** — mentions on dev社区 (blogs, X/Twitter, Reddit r/* threads) only
+  as a *pointer* to a repo; the repo, not the post, is the candidate.
+
+Tier-3 candidates ALWAYS go through `vetting.md` and ALWAYS require explicit
+per-item approval. Never auto-install a Tier-3 find.
+
+---
+
+## Dedupe & rank
+
+1. Collapse by canonical identity (repo URL, or marketplace plugin id, or MCP
+   server name). Keep the highest-trust source for the merged candidate.
+2. Rank within a need: `trustTier` first, then `popularity`, then `recency`,
+   then `relevance`.
+3. Cap suggestions to the top ~3 per need unless the user asks for more.

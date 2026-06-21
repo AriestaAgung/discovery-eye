@@ -1,0 +1,10 @@
+# OS
+.DS_Store
+
+# Discovery Eye runtime state (per-user, not shipped)
+.discovery-eye/
+
+# Session/local scratch
+.remember/
+*.bak
+node_modules/

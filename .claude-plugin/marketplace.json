@@ -1,0 +1,13 @@
+{
+  "name": "discovery-eye",
+  "owner": {
+    "name": "Ariesta Agung"
+  },
+  "plugins": [
+    {
+      "name": "discovery-eye",
+      "source": "./",
+      "description": "Discover & install agent capabilities (MCP, skills, plugins, connectors, memory) with vetting and per-item approval."
+    }
+  ]
+}
