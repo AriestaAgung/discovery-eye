@@ -97,7 +97,11 @@ per need for large sets). Three tiers, detailed in `references/sources.md`:
    On hosts without this catalog, skip Tier 1.
 2. **Registries** — anthropics marketplace, MCP registry, awesome-mcp lists,
    superpowers, and entries in `~/.claude/plugins/known_marketplaces.json`.
-3. **Open web** — WebSearch + GitHub search + WebFetch + social mentions.
+3. **Open web** — WebSearch + GitHub search + WebFetch + social mentions,
+   including the four social platforms (YouTube, Instagram, Threads, LinkedIn)
+   via `node "$SKILL_DIR/scripts/search-social.mjs plan <platform> "<need>"`
+   to get recipes, then `normalize <platform>` on the fetched JSON. See
+   `references/social-platforms.md` for per-platform strategy & ToS limits.
 
 Every result is normalized to the **candidate record**:
 
