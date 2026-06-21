@@ -39,3 +39,30 @@ export function buildGithubQueries(need) {
     },
   ];
 }
+
+export function normalizeGithubRepos(rawJson, need) {
+  const needText = (need || "").trim();
+  const out = [];
+  if (!rawJson || !Array.isArray(rawJson.items)) return out;
+  const seen = new Set();
+  for (const r of rawJson.items) {
+    const url = r.html_url;
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    const name = (r.full_name || "").split("/")[1] || r.name || url;
+    out.push({
+      type: "mcp",
+      name,
+      source: "github",
+      sourceUrl: url,
+      description: (r.description || "").slice(0, 200),
+      need: needText,
+      install: { repo: url, path: "" },
+      stars: r.stargazers_count || 0,
+      updatedAt: r.pushed_at || r.updated_at || "",
+      topics: Array.isArray(r.topics) ? r.topics : [],
+      discoveredVia: "github:repos",
+    });
+  }
+  return out;
+}

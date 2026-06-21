@@ -39,3 +39,64 @@ test("buildGithubQueries trims the need and rejects empty", () => {
   const recipes = buildGithubQueries("  trim me  ");
   assert.ok(recipes.every((r) => typeof r.query === "string" && r.query.length > 0));
 });
+
+import { normalizeGithubRepos } from "./search-github.mjs";
+
+test("normalizeGithubRepos maps a repo item to a candidate with stars + updatedAt", () => {
+  const raw = {
+    items: [
+      {
+        full_name: "foo/pg-mcp",
+        name: "pg-mcp",
+        html_url: "https://github.com/foo/pg-mcp",
+        stargazers_count: 42,
+        pushed_at: "2026-05-01T00:00:00Z",
+        description: "Postgres MCP server",
+        topics: ["mcp", "postgres"],
+      },
+    ],
+  };
+  const out = normalizeGithubRepos(raw, "postgres mcp");
+  assert.equal(out.length, 1);
+  const c = out[0];
+  assert.equal(c.type, "mcp");
+  assert.equal(c.name, "pg-mcp");
+  assert.equal(c.source, "github");
+  assert.equal(c.sourceUrl, "https://github.com/foo/pg-mcp");
+  assert.equal(c.need, "postgres mcp");
+  assert.deepEqual(c.install, { repo: "https://github.com/foo/pg-mcp", path: "" });
+  assert.equal(c.stars, 42);
+  assert.equal(c.updatedAt, "2026-05-01T00:00:00Z");
+  assert.deepEqual(c.topics, ["mcp", "postgres"]);
+  assert.equal(c.discoveredVia, "github:repos");
+});
+
+test("normalizeGithubRepos dedupes repeated html_url across pages", () => {
+  const raw = {
+    items: [
+      { full_name: "a/x", html_url: "https://github.com/a/x", stargazers_count: 1 },
+      { full_name: "a/x", html_url: "https://github.com/a/x", stargazers_count: 1 },
+      { full_name: "b/y", html_url: "https://github.com/b/y", stargazers_count: 2 },
+    ],
+  };
+  const out = normalizeGithubRepos(raw, "");
+  assert.equal(out.length, 2);
+  assert.equal(out[0].sourceUrl, "https://github.com/a/x");
+  assert.equal(out[1].sourceUrl, "https://github.com/b/y");
+});
+
+test("normalizeGithubRepos handles missing description/topics gracefully", () => {
+  const raw = { items: [{ full_name: "z/w", html_url: "https://github.com/z/w" }] };
+  const out = normalizeGithubRepos(raw, "n");
+  assert.equal(out.length, 1);
+  assert.equal(out[0].description, "");
+  assert.deepEqual(out[0].topics, []);
+  assert.equal(out[0].stars, 0);
+  assert.equal(out[0].updatedAt, "");
+});
+
+test("normalizeGithubRepos returns [] for null or no items", () => {
+  assert.deepEqual(normalizeGithubRepos(null, "x"), []);
+  assert.deepEqual(normalizeGithubRepos({}, "x"), []);
+  assert.deepEqual(normalizeGithubRepos({ items: [] }, "x"), []);
+});
