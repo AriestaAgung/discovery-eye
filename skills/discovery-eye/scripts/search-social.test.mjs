@@ -87,3 +87,65 @@ test("extractRepoUrls returns [] for empty / null input", () => {
   assert.deepEqual(extractRepoUrls(null), []);
   assert.deepEqual(extractRepoUrls(undefined), []);
 });
+
+import { normalizeResults } from "./search-social.mjs";
+
+test("normalizeResults youtube extracts candidates from API items with videoId object", () => {
+  const raw = {
+    items: [
+      {
+        id: { videoId: "vid1" },
+        snippet: {
+          title: "Best Postgres MCP server walkthrough",
+          description: "repo: github.com/foo/pg-mcp — stars welcome",
+        },
+      },
+    ],
+  };
+  const out = normalizeResults("youtube", raw, "postgres mcp");
+  assert.equal(out.length, 1);
+  assert.equal(out[0].type, "mcp");
+  assert.equal(out[0].name, "pg-mcp");
+  assert.equal(out[0].source, "github");
+  assert.equal(out[0].sourceUrl, "https://github.com/foo/pg-mcp");
+  assert.equal(out[0].need, "postgres mcp");
+  assert.equal(out[0].platform, "youtube");
+  assert.match(out[0].description, /Postgres MCP server walkthrough/);
+  assert.match(out[0].description, /\(yt:vid1\)/);
+  assert.deepEqual(out[0].install, { repo: "https://github.com/foo/pg-mcp", path: "" });
+});
+
+test("normalizeResults youtube dedupes same repo across multiple videos", () => {
+  const raw = {
+    items: [
+      { id: { videoId: "a" }, snippet: { title: "t1", description: "github.com/foo/x" } },
+      { id: { videoId: "b" }, snippet: { title: "t2", description: "github.com/foo/x again" } },
+      { id: { videoId: "c" }, snippet: { title: "t3", description: "github.com/bar/y" } },
+    ],
+  };
+  const out = normalizeResults("youtube", raw, "need");
+  assert.equal(out.length, 2);
+  assert.equal(out[0].sourceUrl, "https://github.com/foo/x");
+  assert.equal(out[1].sourceUrl, "https://github.com/bar/y");
+});
+
+test("normalizeResults youtube handles string id (search-page scrape shape)", () => {
+  const raw = {
+    items: [
+      { id: "vid2", snippet: { title: "Demo", description: "github.com/baz/qux" } },
+    ],
+  };
+  const out = normalizeResults("youtube", raw, "");
+  assert.equal(out.length, 1);
+  assert.equal(out[0].sourceUrl, "https://github.com/baz/qux");
+  assert.match(out[0].description, /\(yt:vid2\)/);
+});
+
+test("normalizeResults youtube returns [] when items have no repo links", () => {
+  const raw = {
+    items: [
+      { id: { videoId: "v" }, snippet: { title: "no links", description: "just talk" } },
+    ],
+  };
+  assert.deepEqual(normalizeResults("youtube", raw, "x"), []);
+});

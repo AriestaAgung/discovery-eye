@@ -71,3 +71,43 @@ export function extractRepoUrls(text) {
   }
   return [...out];
 }
+
+export function normalizeResults(platform, rawJson, need) {
+  const needText = (need || "").trim();
+  const out = [];
+  const seen = new Set();
+
+  function addCandidate(repoUrl, description) {
+    if (seen.has(repoUrl)) return;
+    seen.add(repoUrl);
+    const parts = repoUrl.replace("https://github.com/", "").split("/");
+    out.push({
+      type: "mcp",
+      name: parts[1] || repoUrl,
+      source: "github",
+      sourceUrl: repoUrl,
+      description: (description || "").slice(0, 200),
+      need: needText,
+      install: { repo: repoUrl, path: "" },
+      platform,
+    });
+  }
+
+  if (!rawJson) return out;
+
+  if (platform === "youtube" && rawJson.items) {
+    for (const v of rawJson.items) {
+      const snip = v.snippet || {};
+      const title = snip.title || "";
+      const desc = snip.description || "";
+      const vid = (v.id && (v.id.videoId || v.id)) || "";
+      for (const url of extractRepoUrls(`${title}\n${desc}`)) {
+        addCandidate(url, title + (vid ? ` (yt:${vid})` : ""));
+      }
+    }
+    return out;
+  }
+
+  // Fallback for other platforms / shapes is implemented in Task 5.
+  return out;
+}
