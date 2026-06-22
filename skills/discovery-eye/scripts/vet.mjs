@@ -33,10 +33,13 @@ export function vet(candidate, repoData = {}) {
   const isTrustedSource = c.source === "catalog" || c.source === "npm";
   const hasRepo = !!repoData.id;
 
-  // Hard block: a source URL was supplied but we can't point at inspectable code.
-  // GitHub URLs, npx packages, and curated catalog/npm entries are inspectable.
-  if (c.sourceUrl && !hasRepo && !isGithub && !isNpx && !isTrustedSource) {
-    report.hardBlocks.push("No source code available or repo not found");
+  // Hard block — FAIL CLOSED: unless we can point at inspectable code, reject.
+  // Inspectable = a GitHub repo, an npm/npx package, a curated catalog/npm
+  // entry, or fetched repo metadata. A candidate with no such anchor (e.g. a
+  // bare name or a web hit with no sourceUrl) is exactly what must be blocked.
+  const inspectable = isGithub || isNpx || isTrustedSource || hasRepo;
+  if (!inspectable) {
+    report.hardBlocks.push("No inspectable source (need a GitHub repo, npm/npx package, or curated catalog entry)");
   }
 
   // Soft flags (warn, don't block) — only when we have repo metadata to judge.
@@ -44,7 +47,7 @@ export function vet(candidate, repoData = {}) {
     const lastUpdate = new Date(repoData.pushed_at).getTime();
     if (Date.now() - lastUpdate > YEAR_MS) report.softFlags.push("Last updated > 1 year ago");
   }
-  if (repoData.stargazers_count !== undefined && repoData.stargazers_count < 10) {
+  if (Number.isFinite(repoData.stargazers_count) && repoData.stargazers_count < 10) {
     report.softFlags.push(`Stars < 10 (${repoData.stargazers_count})`);
   }
   if (hasRepo && !repoData.description && !c.description) {
@@ -53,7 +56,7 @@ export function vet(candidate, repoData = {}) {
 
   // Merit score (0–100) — mirrors references/scoring.md.
   let score = 0;
-  if (repoData.stargazers_count) {
+  if (Number.isFinite(repoData.stargazers_count)) {
     if (repoData.stargazers_count > 1000) score += 30;
     else if (repoData.stargazers_count > 100) score += 20;
     else if (repoData.stargazers_count > 10) score += 10;

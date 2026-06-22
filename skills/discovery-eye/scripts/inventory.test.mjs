@@ -57,3 +57,19 @@ test("flags ledger-installed items with the discovery-eye badge", () => {
   assert.strictEqual(inv.ledgerCount, 1);
   clean();
 });
+
+test("does NOT flag an unrelated same-named item (no name-only match)", () => {
+  const { home, project, clean } = setup();
+  // ledger has an mcp named "git" at global scope...
+  mkdirSync(join(home, ".discovery-eye"), { recursive: true });
+  writeFileSync(join(home, ".discovery-eye", "ledger.json"), JSON.stringify({
+    installs: [{ type: "mcp", name: "git", scope: "global" }],
+  }));
+  // ...but the project has a *skill* named "git" the user made themselves
+  mkdirSync(join(project, ".claude", "skills", "git"), { recursive: true });
+  writeFileSync(join(project, ".claude", "skills", "git", "SKILL.md"), "---\nname: git\n---\n");
+  const inv = buildInventory({ home, projectDir: project });
+  const skill = inv.skills.find((s) => s.name === "git");
+  assert.strictEqual(skill.by, ""); // different type+scope -> NOT badged
+  clean();
+});

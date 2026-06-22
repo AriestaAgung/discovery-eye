@@ -78,3 +78,67 @@ test("skill: copies dir and tags frontmatter", () => {
   assert.throws(() => installSkill(src, destSkills, "foo"), /already installed/);
   rmSync(dir, { recursive: true, force: true });
 });
+
+test("skill: rejects path-traversal names", () => {
+  const dir = tmp("ins-trav-");
+  const src = join(dir, "src");
+  mkdirSync(src, { recursive: true });
+  writeFileSync(join(src, "SKILL.md"), "---\nname: x\n---\n");
+  const destSkills = join(dir, "skills");
+  for (const bad of ["../evil", "../../etc/x", "/abs/evil", "a/b"]) {
+    assert.throws(() => installSkill(src, destSkills, bad), /path traversal/, `should reject ${bad}`);
+  }
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("mcp-json: refuses to overwrite a malformed existing config", () => {
+  const dir = tmp("ins-bad-");
+  const cfg = join(dir, ".mcp.json");
+  writeFileSync(cfg, "{ this is not json");
+  assert.throws(() => installMcpJson(cfg, "fs", { command: "npx" }), /not valid JSON/);
+  // original left intact, not clobbered
+  assert.strictEqual(readFileSync(cfg, "utf8"), "{ this is not json");
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("mcp-json: preserves existing servers when adding", () => {
+  const dir = tmp("ins-keep-");
+  const cfg = join(dir, ".mcp.json");
+  writeFileSync(cfg, JSON.stringify({ mcpServers: { a: { command: "x" } } }));
+  installMcpJson(cfg, "b", { command: "y" });
+  const after = JSON.parse(readFileSync(cfg, "utf8"));
+  assert.deepStrictEqual(Object.keys(after.mcpServers).sort(), ["a", "b"]);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("backup: second install does not clobber the pristine .bak", () => {
+  const dir = tmp("ins-bak2-");
+  const cfg = join(dir, ".mcp.json");
+  writeFileSync(cfg, JSON.stringify({ mcpServers: { orig: { command: "o" } } }));
+  const r1 = installMcpJson(cfg, "a", { command: "x" });
+  const r2 = installMcpJson(cfg, "b", { command: "y" });
+  // first .bak is the pristine original; second backup is a distinct file
+  assert.notStrictEqual(r1.backup, r2.backup);
+  const pristine = JSON.parse(readFileSync(r1.backup, "utf8"));
+  assert.deepStrictEqual(Object.keys(pristine.mcpServers), ["orig"]);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("mcp-toml: keeps nested non-env objects as sub-tables", () => {
+  const dir = tmp("ins-nest-");
+  const cfg = join(dir, "config.toml");
+  installMcpToml(cfg, "remote", { command: "npx", headers: { Authorization: "Bearer x" } });
+  const txt = readFileSync(cfg, "utf8");
+  assert.match(txt, /\[mcp_servers\.remote\.headers\]/);
+  assert.match(txt, /Authorization = "Bearer x"/);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test("mcp-toml: quotes names with illegal bare-key chars", () => {
+  const dir = tmp("ins-qkey-");
+  const cfg = join(dir, "config.toml");
+  installMcpToml(cfg, "github mcp", { command: "npx" });
+  const txt = readFileSync(cfg, "utf8");
+  assert.match(txt, /\[mcp_servers\."github mcp"\]/);
+  rmSync(dir, { recursive: true, force: true });
+});

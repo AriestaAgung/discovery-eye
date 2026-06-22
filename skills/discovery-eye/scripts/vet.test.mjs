@@ -46,3 +46,19 @@ test("flags low stars via repoData", () => {
   const res = vet({ name: "obscure", sourceUrl: "https://github.com/owner/repo" }, { id: 1, stargazers_count: 2 });
   assert.ok(res.softFlags.some((f) => f.includes("Stars < 10")));
 });
+
+test("fails closed: candidate with no inspectable source is hard-blocked", () => {
+  // bare name, no sourceUrl, no npx install, not a trusted source
+  const bare = vet({ name: "evil-tool", source: "web" });
+  assert.strictEqual(bare.passed, false);
+  assert.ok(bare.hardBlocks.length > 0);
+  // even a bare string
+  assert.strictEqual(vet("just-a-name").passed, false);
+  // npx install IS inspectable -> allowed
+  assert.strictEqual(vet({ name: "ok", install: "npx -y ok", source: "web" }).passed, true);
+});
+
+test("null stargazers_count does not spuriously flag", () => {
+  const res = vet({ name: "x", sourceUrl: "https://github.com/owner/repo" }, { id: 1, stargazers_count: null });
+  assert.ok(!res.softFlags.some((f) => f.includes("Stars < 10")));
+});

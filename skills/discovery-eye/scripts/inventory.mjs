@@ -12,6 +12,7 @@ import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { listMcpTableNames } from "./lib-toml.mjs";
 
 // host -> { skills (home-relative dir), mcp {file, fmt}, plugins, projectSkills }
 const HOSTS = {
@@ -44,21 +45,19 @@ function listDir(p) {
   try { return readdirSync(p).filter((n) => !n.startsWith(".")); } catch { return []; }
 }
 function tomlMcpNames(file) {
-  let txt;
-  try { txt = readFileSync(file, "utf8"); } catch { return []; }
-  const names = [];
-  const re = /^\[mcp_servers\.([^\].]+)\]/gm;
-  let m;
-  while ((m = re.exec(txt))) names.push(m[1]);
-  return names;
+  try { return listMcpTableNames(readFileSync(file, "utf8")); } catch { return []; }
 }
 
 export function buildInventory({ home = homedir(), projectDir = process.cwd() } = {}) {
   const ledger = readJson(join(home, ".discovery-eye", "ledger.json")) || { installs: [] };
-  const byScout = new Set(ledger.installs.map((e) => `${e.type}:${e.name}:${e.scope}`));
-  const scoutNames = new Set(ledger.installs.map((e) => e.name));
-  const flag = (type, name, scope) =>
-    byScout.has(`${type}:${name}:${scope}`) || scoutNames.has(name) ? "🔖 discovery-eye" : "";
+  // Match on type+name+scope (and host when both sides have it). No name-only
+  // fallback: that mislabels unrelated same-named items across hosts/types as
+  // discovery-eye-managed, which would suppress the "not ours" Remove warning.
+  const flag = (type, name, scope, host) =>
+    ledger.installs.some((e) =>
+      e.type === type && e.name === name && e.scope === scope &&
+      (!e.host || !host || e.host === host)
+    ) ? "🔖 discovery-eye" : "";
 
   const out = { skills: [], mcp: [], plugins: [], ledgerCount: ledger.installs.length };
 
@@ -73,7 +72,7 @@ export function buildInventory({ home = homedir(), projectDir = process.cwd() } 
         try { isSkill = statSync(full).isDirectory() || entry.endsWith(".md"); } catch {}
         if (!isSkill) continue;
         const name = entry.replace(/\.md$/, "");
-        out.skills.push({ name, host, scope, by: flag("skill", name, scope) });
+        out.skills.push({ name, host, scope, by: flag("skill", name, scope, host) });
       }
     }
 
@@ -83,7 +82,7 @@ export function buildInventory({ home = homedir(), projectDir = process.cwd() } 
     if (prof.projectMcp) mcpTargets.push(["project", join(projectDir, ...prof.projectMcp.rel), prof.projectMcp.fmt]);
     for (const [scope, file, fmt] of mcpTargets) {
       const names = fmt === "toml" ? tomlMcpNames(file) : Object.keys(readJson(file)?.mcpServers || {});
-      for (const name of names) out.mcp.push({ name, host, scope, file, by: flag("mcp", name, scope) });
+      for (const name of names) out.mcp.push({ name, host, scope, file, by: flag("mcp", name, scope, host) });
     }
 
     // plugins — host-specific (Claude only today)
@@ -91,7 +90,7 @@ export function buildInventory({ home = homedir(), projectDir = process.cwd() } 
       const plug = readJson(join(home, ...prof.plugins));
       for (const id of Object.keys(plug?.plugins || {})) {
         const name = id.split("@")[0];
-        out.plugins.push({ name: id, host, scope: "user", by: flag("plugin", name, "global") || flag("plugin", id, "global") });
+        out.plugins.push({ name: id, host, scope: "user", by: flag("plugin", name, "global", host) || flag("plugin", id, "global", host) });
       }
     }
   }
