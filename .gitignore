@@ -8,3 +8,10 @@
 .remember/
 *.bak
 node_modules/
+
+# OpenMemory - IDE/Assistant specific rules
+AGENTS.md
+openmemory.md
+
+# Stale planning doc — not shipped
+implementation.md

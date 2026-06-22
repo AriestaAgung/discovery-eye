@@ -130,13 +130,32 @@ always-on skill taxes every prompt). Drop candidates already in the inventory
 set (Phase 3), then **dedupe and rank with the 0–100 rubric in
 `references/scoring.md`** (merit ranking — distinct from the safety badge).
 
+For a fast, consistent first pass you MAY run the vetting helper per candidate:
+
+```
+node "$SKILL_DIR/scripts/vet.mjs" '<candidate-json>'
+```
+
+It fetches GitHub repo metadata (stars, last-push), applies the hard-block
+rules, and returns `{ passed, hardBlocks, softFlags, score }`. Treat its `score`
+as the merit baseline and its `hardBlocks` as authoritative (a hard block → 🔴,
+never pre-selected). You still add the judgment the script can't: reading the
+entry-point code, secret/auth scope, and context-token cost. The helper needs
+no network to score a candidate you already have metadata for, and degrades to
+a metadata-only score if the GitHub call fails (offline / rate-limited).
+
 When one plugin covers several confirmed needs, list it once and note all the
 needs it answers — don't repeat it per need.
 
 ## Phase 7 — Suggest
 
-Present candidates grouped by need. Per item: one-line value, type badge,
-evidence line, **risk badge**, and context cost. Mark a recommended pick per need.
+Present candidates grouped by need as a clean, numbered list. Do not output raw
+JSON or internal phase logs. Per item, display: name, type badge, score,
+**risk badge**, and a brief one-line value.
+
+**If a need has more than one candidate, you MUST present the list and ask the
+user to pick which one they prefer before proceeding.** Do not auto-select a
+recommended pick.
 
 **Empty branches** — handle gracefully, don't fabricate:
 - A need with no candidate → say so, suggest a broader re-search or manual route.
@@ -144,10 +163,10 @@ evidence line, **risk badge**, and context cost. Mark a recommended pick per nee
 
 ## Phase 8 — Approve + scope
 
-Per item, the user approves or skips. For each approved item ask scope:
-**global** (user-level dir) or **project** (cwd `.claude/` / `.mcp.json`).
-Items that failed vetting (🔴) are not offered for one-click install — flag
-them and require an explicit override.
+Once the user has selected their preferred candidate for a need, ask for the
+install scope: **global** (user-level dir) or **project** (cwd `.claude/` /
+`.mcp.json`). Items that failed vetting (🔴) are not offered for one-click
+install — flag them and require an explicit override.
 
 ## Phase 9 — Install
 

@@ -56,7 +56,7 @@ Claude Code) install it as a plugin.
 ### Claude Code — as a plugin (one-click)
 
 ```
-/plugin marketplace add <your-org>/discovery-eye
+/plugin marketplace add AriestaAgung/discovery-eye
 /plugin install discovery-eye@discovery-eye
 ```
 

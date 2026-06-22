@@ -1,0 +1,13 @@
+{
+  "name": "discovery-eye",
+  "version": "0.2.0",
+  "description": "Find and install everything a coding agent might need, in one guided flow.",
+  "author": "AriestaAgung",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/AriestaAgung/discovery-eye",
+  "repository": "https://github.com/AriestaAgung/discovery-eye",
+  "tags": ["mcp", "discovery", "install", "agent", "skill"],
+  "category": "developer-tools",
+  "keywords": ["mcp", "skill", "plugin", "discovery", "install", "agent"],
+  "engine": { "node": ">=22" }
+}
