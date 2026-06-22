@@ -97,6 +97,9 @@ per need for large sets). Three tiers, detailed in `references/sources.md`:
    On hosts without this catalog, skip Tier 1.
 2. **Registries** — anthropics marketplace, MCP registry, awesome-mcp lists,
    superpowers, and entries in `~/.claude/plugins/known_marketplaces.json`.
+   `node "$SKILL_DIR/scripts/search-registry.mjs" "<keywords>"` indexes the
+   *configured* registries (zero network) so you know which to expand; querying
+   a registry's full contents stays agent-driven (WebFetch / host plugin list).
 3. **Open web** — WebSearch + GitHub search + WebFetch + social mentions,
    including the four social platforms (YouTube, Instagram, Threads, LinkedIn)
    via `node "$SKILL_DIR/scripts/search-social.mjs plan <platform> "<need>"`
@@ -171,23 +174,33 @@ install — flag them and require an explicit override.
 ## Phase 9 — Install
 
 Dispatch by `type` using the host profile. Exact commands/paths per host per
-type live in `references/host-profiles.md`. Summary:
+type live in `references/host-profiles.md`. Resolve the target path from the
+host profile, then let `scripts/install.mjs` do the mechanical write — it backs
+up to `<file>.bak`, merges without clobbering (MCP name collisions auto-suffix
+`-2`), and verifies the entry after writing:
 
+- **mcp** (JSON host — Claude/Gemini) →
+  `node "$SKILL_DIR/scripts/install.mjs" mcp-json <configPath> <name> '<serverJson>'`
+- **mcp** (TOML host — Codex) →
+  `node "$SKILL_DIR/scripts/install.mjs" mcp-toml <configPath> <name> '<serverJson>'`
+  Prompt for required env var *names*; never store secret *values* — reference
+  env (`"${API_KEY}"`) or leave a placeholder.
+- **skill** → fetch the skill into a temp dir, then
+  `node "$SKILL_DIR/scripts/install.mjs" skill <srcDir> <destSkillsDir> <name>`
+  (copies it and tags `installed_by: discovery-eye` in its frontmatter).
+- **memory** *(durable note)* →
+  `node "$SKILL_DIR/scripts/install.mjs" memory <memoryFile> '<text>' [label]`
+  (appends a `<!-- installed_by: discovery-eye -->` block). A memory *backend*
+  (mem0/openmemory/MCP memory server) installs via the **mcp** path and is
+  tagged `mcp:memory` in the ledger.
 - **plugin** → add marketplace if new, then plugin install (Claude Code only;
-  other hosts install the plugin's components individually).
-- **skill** → fetch SKILL.md (+ assets), write into host skills dir at chosen scope.
-- **mcp** → serialize the server entry into the host MCP config (JSON or
-  TOML). Prompt for required env var *names*; never store secret *values* —
-  reference env or leave a placeholder.
-- **connector** → remote-MCP/OAuth entry; hand off interactive auth to the user.
-- **memory** → *backend* (mem0/openmemory/MCP memory server) installs via the
-  **mcp** path above (tag `mcp:memory` in the ledger); a *durable note* is
-  appended to the host memory file (`CLAUDE.md`/`AGENTS.md`/`GEMINI.md`) at scope.
+  other hosts install the plugin's components individually). Host-native, no script.
+- **connector** → write the remote-MCP/OAuth entry (mcp-json), then hand off
+  interactive auth to the user.
 
-**Always back up** the target config to `<file>.bak` before writing (enables
-Undo). **Name collision:** if an MCP server name already exists, do not
-clobber — append a suffix (`<name>-2`) or ask the user to pick; flag it.
-Report failures, don't hide them.
+`install.mjs` returns JSON including the final `name` (post-collision) and
+`backup` path — feed those into the ledger record below. Report failures, don't
+hide them.
 
 **Record provenance.** After each successful install, write a ledger record
 (canonical source of truth for List + Undo):
