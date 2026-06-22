@@ -56,7 +56,7 @@ Claude Code) install it as a plugin.
 ### Claude Code — as a plugin (one-click)
 
 ```
-/plugin marketplace add <your-org>/discovery-eye
+/plugin marketplace add AriestaAgung/discovery-eye
 /plugin install discovery-eye@discovery-eye
 ```
 
@@ -108,10 +108,13 @@ Then invoke it from your agent (e.g. `discovery-eye` / "find me a tool for …")
 │   │   └── vetting.md        #   safety: evidence fields + risk flags + badges
 │   └── scripts/              # plain Node helpers the skill calls
 │       ├── search-catalog.mjs  # Tier-1 local catalog search
+│       ├── search-registry.mjs # Tier-2 configured-registry index search
 │       ├── search-social.mjs   # Tier-3 social-platform search + normalize
 │       ├── search-github.mjs   # Tier-3 GitHub (repos + code search) + normalize
+│       ├── vet.mjs             # Phase 6 hard-block + 0–100 score helper
+│       ├── install.mjs         # Phase 9 safe writes (mcp/skill/memory) + backup
 │       ├── ledger.mjs          # provenance record (powers list + undo)
-│       ├── inventory.mjs       # `discovery-eye list`
+│       ├── inventory.mjs       # `discovery-eye list` (multi-host)
 │       └── remove.mjs          # uninstall / quarantine / restore
 └── .claude-plugin/           # Claude Code plugin + marketplace manifests
 ```

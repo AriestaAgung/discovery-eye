@@ -18,6 +18,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join, basename } from "node:path";
+import { removeMcpTable, hasMcpTable } from "./lib-toml.mjs";
 
 const HOME = homedir();
 const QUARANTINE = join(HOME, ".discovery-eye", "quarantine");
@@ -66,6 +67,18 @@ if (cmd === "skill") {
   delete cfg.mcpServers[name];
   writeFileSync(file, JSON.stringify(cfg, null, 2) + "\n");
   console.log(`removed MCP '${name}' from ${file} (backup: ${bak})`);
+} else if (cmd === "mcp-toml") {
+  // Remove a Codex-style [mcp_servers.<name>] table (and its sub-tables).
+  // Path-driven: caller resolves the TOML config path from the host profile.
+  const [file, name] = [a, b];
+  if (!file || !name) { console.error("usage: remove.mjs mcp-toml <configPath> <name>"); process.exit(2); }
+  let txt;
+  try { txt = readFileSync(file, "utf8"); } catch { console.error(`config not found: ${file}`); process.exit(1); }
+  if (!hasMcpTable(txt, name)) { console.error(`MCP table '${name}' not in ${file}`); process.exit(1); }
+  const bak = backup(file);
+  const { text } = removeMcpTable(txt, name);
+  writeFileSync(file, text.endsWith("\n") ? text : text + "\n");
+  console.log(`removed MCP '${name}' from ${file} (backup: ${bak})`);
 } else if (cmd === "restore") {
   const qid = a;
   const manifestPath = join(QUARANTINE, qid + ".manifest.json");
@@ -82,6 +95,6 @@ if (cmd === "skill") {
   const items = readdirSync(QUARANTINE).filter((n) => n.endsWith(".manifest.json"));
   console.log(JSON.stringify(items.map((n) => ({ id: n.replace(".manifest.json", ""), ...readJson(join(QUARANTINE, n)) })), null, 2));
 } else {
-  console.error("usage: remove.mjs skill|mcp <name> <scope> [projectDir] | restore <qid> | trash-list");
+  console.error("usage: remove.mjs skill|mcp <name> <scope> [projectDir] | mcp-toml <configPath> <name> | restore <qid> | trash-list");
   process.exit(2);
 }
